@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "rustfs.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ include "rustfs.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: {{ include "rustfs.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "rustfs.name" . }}
+    spec:
+      initContainers:
+        - name: init-step
+          image: "{{ .Values.initStep.repository }}:{{ .Values.initStep.tag }}"
+          imagePullPolicy: {{ .Values.initStep.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              chown -R 1000:1000 /data
+              chown -R 1000:1000 /logs
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: logs
+              mountPath: /logs
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/usr/bin/rustfs"]
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.service.endpoint_port }}
+              name: endpoint
+            - containerPort: {{ .Values.service.console_port }}
+              name: console
+          env:
+            - name: REPLICA_COUNT
+              value: "{{ .Values.replicaCount }}"
+          envFrom:
+            - configMapRef:
+                name: {{ include "rustfs.fullname" . }}-config
+            - secretRef:
+                name: {{ include "rustfs.fullname" . }}-secret
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+              cpu: {{ .Values.resources.limits.cpu }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            exec:
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            - name: logs
+              mountPath: /logs
+            - name: rustfs-data
+              mountPath: /data
+      volumes:
+        - name: logs
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: rustfs-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageclass.name }}
+        resources:
+          requests:
+            storage: {{ .Values.storageclass.size}}
