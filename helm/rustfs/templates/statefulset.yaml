@@ -72,7 +72,6 @@ spec:
             httpGet:
               path: /health
               port: 9000
-            exec:
             initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 3
@@ -94,4 +93,4 @@ spec:
         storageClassName: {{ .Values.storageclass.name }}
         resources:
           requests:
-            storage: {{ .Values.storageclass.size}}
+            storage: {{ .Values.storageclass.size }}

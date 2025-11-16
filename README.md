@@ -3,8 +3,8 @@
 Modified from the official one, and make it more common.  
 从官网版本进行修改，让其变得更加实用。
 
-This one provides a Single-Node-Single-Disk installation or a Multi-Node-Single-Disk installation, via setting `replicaCount` field.  
-本 Chart 提供单机单盘安装和多机单盘安装。通过修改字段`replicaCount`的值，您可以控制节点的数量。
+This one provides a Single-Node-Single-Disk installation or a Multi-Node-Multi-Disk installation, via setting `replicaCount` field.  
+本 Chart 提供单机单盘安装和多机多盘安装。通过修改字段`replicaCount`的值，您可以控制节点的数量。
 
 > WIP: This chart will provide a way to control the number of data disks per rustfs node.  
 > 进行中：本 Chart 后续将提供配置每节点数据盘数量的方式。
