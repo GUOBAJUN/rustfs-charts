@@ -17,6 +17,7 @@ You can configure your rustfs installation more accurately. However, there's som
 4. This chart changes the default `service.type` into `ClusterIP` and it will NOT create `Ingress` object until configured.
 5. This chart increases the default resources requested, which will make your rustfs instance run more happily.
 6. Do NOT forget to assign a `StorageClass` for your rustfs instance.
+7. The default name of `persistentVolumeClaim` has been changed into `rustfs-data`, which means it may not be compatible with the official one.
 
 通过本 Chart，你可以更加精确地控制你的 rustfs 安装。但是，有些值得你留意的点：
 
@@ -26,6 +27,7 @@ You can configure your rustfs installation more accurately. However, there's som
 4. `Service` 对象的默认类型被修改为 `ClusterIP`，并且在你手动配置之前，不会自行创建 `Ingress` 对象。
 5. 稍稍增加了默认的资源请求量，更方便你体验 rustfs。
 6. 请为你的 rustfs 实例指定 `StorageClass`。
+7. 默认的持久卷申领名称变更为`rustfs-data`，与官方仓库原版不同。
 
 Finally, here's an example for deployment:  
 最后，这里是一个部署命令示例：
