@@ -5,9 +5,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   RUSTFS_ADDRESS: {{ .Values.config.rustfs.address | quote }}
+  RUSTFS_CONSOLE_ENABLE: {{ .Values.config.rustfs.console_enable | quote }}
   RUSTFS_CONSOLE_ADDRESS: {{ .Values.config.rustfs.console_address | quote }}
   RUSTFS_OBS_LOG_DIRECTORY: {{ .Values.config.rustfs.obs_log_directory | quote }}
-  RUSTFS_CONSOLE_ENABLE: {{ .Values.config.rustfs.console_enable | quote }}
   RUSTFS_LOG_LEVEL: {{ .Values.config.rustfs.log_level | quote }}
-  RUSTFS_VOLUMES: {{ printf "http://rustfs-{0...%d}.rustfs-headless.rustfs.svc.cluster.local:%d/data" (sub (.Values.replicaCount | int) 1) (.Values.service.endpoint_port | int) }}
-  RUSTFS_OBS_ENVIRONMENT: "production"
+  RUSTFS_VOLUMES: {{ printf "http://rustfs-{0...%d}.rustfs-headless.rustfs.svc.cluster.local:%d/data-{0...%d}" (sub (int .Values.replicaCount) 1) (int .Values.service.endpoint.port) (sub (int .Values.dataVolumeCount ) 1) }}
+  RUSTFS_OBS_ENVIRONMENT: {{ .Values.config.rustfs.obs_environment | quote }}
+  {{- if .Values.config.rustfs.region }}
+  RUSTFS_REGION: {{ .Values.config.rustfs.region | quote }}
+  {{- end }}

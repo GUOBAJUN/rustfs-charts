@@ -9,16 +9,16 @@ spec:
   clusterIP: None
   publishNotReadyAddresses: true
   ports:
-    - port: {{ .Values.service.endpoint_port }}
+    - port: {{ .Values.service.endpoint.port }}
       targetPort: 9000
       protocol: TCP
       name: endpoint
-    - port: {{ .Values.service.console_port }}
+    - port: {{ .Values.service.console.port }}
       targetPort: 9001
       protocol: TCP
       name: console
   selector:
-    app: {{ include "rustfs.name" . }}
+    {{- include "rustfs.selectorLabels" . | nindent 6 }}
 ---
 apiVersion: v1
 kind: Service
@@ -39,13 +39,19 @@ spec:
     clientIP:
       timeoutSeconds: {{ .Values.service.sessionAffinity.timeoutSeconds }}
   ports:
-    - port: {{ .Values.service.endpoint_port }}
-      targetPort: {{ .Values.service.endpoint_port }}
+    - port: {{ .Values.service.endpoint.port }}
+      targetPort: {{ .Values.service.endpoint.port }}
+      {{- if (eq .Values.service.type "NodePort") }}
+      nodePort: {{ .Values.service.endpoint.nodePort}}
+      {{- end }}
       protocol: TCP
       name: endpoint
-    - port: {{ .Values.service.console_port }}
-      targetPort: {{ .Values.service.console_port }}
+    - port: {{ .Values.service.console.port }}
+      targetPort: {{ .Values.service.console.port }}
+      {{- if (eq .Values.service.type "NodePort") }}
+      nodePort: {{ .Values.service.console.nodePort}}
+      {{- end }}
       protocol: TCP
       name: console
   selector:
-    app: {{ include "rustfs.name" . }}
+    {{- include "rustfs.selectorLabels" . | nindent 6 }}

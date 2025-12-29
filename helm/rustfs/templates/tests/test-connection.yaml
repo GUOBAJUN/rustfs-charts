@@ -10,7 +10,7 @@ metadata:
 spec:
   containers:
     - name: wget
-      image: "{{ .Values.initStep.repository }}:{{ .Values.initStep.tag }}"
+      image: "{{ .Values.test.repository }}:{{ .Values.test.tag }}"
       command: ['wget']
-      args: ['http://{{ include "rustfs.fullname" . }}:{{ .Values.service.console_port }}']
+      args: ['http://{{ include "rustfs.fullname" . }}:{{ .Values.service.console.port }}']
   restartPolicy: Never

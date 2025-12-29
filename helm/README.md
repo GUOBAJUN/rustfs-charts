@@ -6,9 +6,9 @@ You can use this helm chart to deploy rustfs on k8s cluster.
 
 | parameter                | description                                  | default value      |
 | ------------------------ | -------------------------------------------- | ------------------ |
-| replicaCount             | Number of cluster nodes.                     | Default is `3`.    |
+| replicaCount             | Number of cluster nodes.                     | Default is `4`.    |
 | image.repository         | docker image repository.                     | `rustfs/rustfs`.   |
-| image.tag                | the tag for rustfs docker image              | `"1.0.0-alpha.68"` |
+| image.tag                | the tag for rustfs docker image              | `"1.0.0-alpha.77"` |
 | secret.rustfs.access_key | RustFS Access Key ID                         | `rustfsadmin`      |
 | secret.rustfs.secret_key | RustFS Secret Key ID                         | `rustfsadmin`      |
 | storageclass.name        | The name for StorageClass.                   | `""`               |

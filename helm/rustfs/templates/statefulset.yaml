@@ -1,35 +1,49 @@
+{{ $dataStorageClassName := .Values.storageclass.data.name }}
+{{ $dataStorageSize := .Values.storageclass.data.size }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ include "rustfs.fullname" . }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "rustfs.selectorLabels" . | nindent 6 }}
 spec:
   serviceName: {{ include "rustfs.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: {{ include "rustfs.name" . }}
+      {{- include "rustfs.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "rustfs.name" . }}
+        {{- include "rustfs.selectorLabels" . | nindent 6 }}
+        {{- if .Values.podLabels }}
+        {{- toYaml .Values.podLabels | nindent 10}}
+        {{- end }}
     spec:
-      initContainers:
-        - name: init-step
-          image: "{{ .Values.initStep.repository }}:{{ .Values.initStep.tag }}"
-          imagePullPolicy: {{ .Values.initStep.pullPolicy }}
-          command:
-            - sh
-            - -c
-            - |
-              chown -R 1000:1000 /data
-              chown -R 1000:1000 /logs
-          volumeMounts:
-            - name: rustfs-data
-              mountPath: /data
-            - name: logs
-              mountPath: /logs
+      imagePullSecrets: {{ .Values.imagePullSecrets }}
+      {{- if .Values.affinity }}
+      affinity:
+        nodeAffinity:
+        {{- if .Values.affinity.nodeAffinity }}
+          {{- toYaml .Values.affinity.nodeAffinity | nindent 10 }}
+        {{- else }}
+          {}
+        {{- end }}
+        {{- if .Values.affinity.podAntiAffinity.enabled }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - {{ include "rustfs.name" . }}
+              topologyKey: {{ .Values.affinity.podAntiAffinity.topologyKey }}
+        {{- end }}
+      {{- end }}
+      tolerations: {{ .Values.tolerations }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -40,13 +54,10 @@ spec:
           {{- toYaml .Values.securityContext | nindent 12 }}
           {{- end }}
           ports:
-            - containerPort: {{ .Values.service.endpoint_port }}
+            - containerPort: {{ .Values.service.endpoint.port }}
               name: endpoint
-            - containerPort: {{ .Values.service.console_port }}
+            - containerPort: {{ .Values.service.console.port }}
               name: console
-          env:
-            - name: REPLICA_COUNT
-              value: "{{ .Values.replicaCount }}"
           envFrom:
             - configMapRef:
                 name: {{ include "rustfs.fullname" . }}-config
@@ -60,37 +71,44 @@ spec:
               memory: {{ .Values.resources.limits.memory }}
               cpu: {{ .Values.resources.limits.cpu }}
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 9000
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 3
-            successThreshold: 1
-            failureThreshold: 3
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
-            httpGet:
-              path: /health
-              port: 9000
-            initialDelaySeconds: 30
-            periodSeconds: 5
-            timeoutSeconds: 3
-            successThreshold: 1
-            failureThreshold: 3
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
             - name: logs
-              mountPath: /logs
-            - name: rustfs-data
-              mountPath: /data
+              mountPath: {{ .Values.config.rustfs.obs_log_directory }}
+            {{- range $i := until (int .Values.dataVolumeCount) }}
+            - name: rustfs-data-{{ $i }}
+              mountPath: /data-{{ $i }}
+            {{- end }}
       volumes:
+          {{- if not .Values.storageclass.logs }}
         - name: logs
           emptyDir: {}
+          {{- end}}
+        - name: tmp
+          emptyDir: 
+            medium: Memory
   volumeClaimTemplates:
+    {{- range $i := until (int .Values.dataVolumeCount) }}
     - metadata:
-        name: rustfs-data
+        name: rustfs-data-{{ $i }}
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: {{ .Values.storageclass.name }}
+        storageClassName: {{ $dataStorageClassName }}
         resources:
           requests:
-            storage: {{ .Values.storageclass.size }}
+            storage: {{ $dataStorageSize }}
+    {{- end }}
+    {{- if .Values.storageclass.logs }}
+    - metadata:
+        name: logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.storageclass.logs.name }}
+        resources:
+          requests:
+            storage: {{ .Values.storageclass.logs.size }}
+    {{- end}}
