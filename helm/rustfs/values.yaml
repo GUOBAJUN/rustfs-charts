@@ -11,6 +11,10 @@ test:
   repository: busybox
   tag: "1.37.0"
 
+init:
+  repository: busybox
+  tag: "1.37.0"
+
 # **NOTICE** You can use pullPolicy: Always and tag: "latest" to follow rustfs's rapid release
 image:
   repository: rustfs/rustfs
@@ -33,11 +37,11 @@ secret:
 
 config:
   rustfs:
-    address: "0.0.0.0:9000"
+    address: ":9000"
     console_enable: "true"
-    console_address: "0.0.0.0:9001"
+    console_address: ":9001"
     log_level: "info"
-    rust_log: "info"
+    rust_log: "info" # image default is "warn"
     region: # "us-east-1"
     obs_log_directory: "/logs"
     obs_environment: "production"
@@ -61,18 +65,20 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-# **NOTICE** When you set `fsGroupChangePolicy` to `OnRootMisMatch` and it does need to change the permission.
-#            It will take some time.
 securityContext:
-  capabilities:
-    drop:
-      - ALL
-  readOnlyRootFilesystem: true
-  runAsNonRoot: true
-  runAsUser: 10001
-  runAsGroup: 10001
-  fsGroup: 10001
-  fsGroupChangePolicy: OnRootMisMatch
+  pod:
+    fsGroup: 10001
+  container:
+    capabilities:
+      add:
+        - NET_BIND_SERVICE
+        - CAP_CHOWN
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
 
 service:
   type: ClusterIP
