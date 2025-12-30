@@ -11,17 +11,16 @@ data:
   RUSTFS_LOG_LEVEL: {{ .Values.config.rustfs.log_level | quote }}
   RUST_LOG: {{ .Values.config.rustfs.rust_log | quote }}
   {{- if eq (int .Values.replicaCount) 1}}
-  {{- $vols := list }}
-  {{- range $i := until (int .Values.dataVolumeCount) }}
-    {{- $tmp := printf "/data-%d" $i }}
-    {{- $vols = append $vols $tmp}}
+  {{- if eq (int .Values.dataVolumeCount) 1 }}
+  RUSTFS_VOLUMES: "/data-0"
+  {{- else }}
+  RUSTFS_VOLUMES: {{ printf "http://%s-0.%s-headless.%s.svc.cluster.local:%d/data-{0...%d}" (include "rustfs.fullname" .) (include "rustfs.fullname" .) (.Release.Namespace) (int .Values.service.endpoint.port) (sub (int .Values.dataVolumeCount) 1) }}
   {{- end }}
-  RUSTFS_VOLUMES: {{ join "," $vols  | quote}}
   {{- else }}
   {{- if eq (int .Values.dataVolumeCount) 1 }}
-  RUSTFS_VOLUMES: {{ printf "http://rustfs-{0...%d}.rustfs-headless.rustfs.svc.cluster.local:%d/data-0" (sub (int .Values.replicaCount) 1) (int .Values.service.endpoint.port) }}
+  RUSTFS_VOLUMES: {{ printf "http://%s-{0...%d}.%s-headless.%s.svc.cluster.local:%d/data-0" (include "rustfs.fullname" .) (sub (int .Values.replicaCount) 1) (include "rustfs.fullname" .) (.Release.Namespace) (int .Values.service.endpoint.port) }}
   {{- else }}
-  RUSTFS_VOLUMES: {{ printf "http://rustfs-{0...%d}.rustfs-headless.rustfs.svc.cluster.local:%d/data-{0...%d}" (sub (int .Values.replicaCount) 1) (int .Values.service.endpoint.port) (sub (int .Values.dataVolumeCount) 1) }}
+  RUSTFS_VOLUMES: {{ printf "http://%s-{0...%d}.%s-headless.%s.svc.cluster.local:%d/data-{0...%d}" (include "rustfs.fullname" .) (sub (int .Values.replicaCount) 1) (include "rustfs.fullname" .) (.Release.Namespace) (int .Values.service.endpoint.port) (sub (int .Values.dataVolumeCount) 1) }}
   {{- end }}
   {{- end }}
   RUSTFS_OBS_ENVIRONMENT: {{ .Values.config.rustfs.obs_environment | quote }}
